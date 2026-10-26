@@ -1,0 +1,12 @@
+#!/bin/sh
+# pokebattle with the #elder-cm webhook from sops (if present).
+# PATH pinned so launchd (which has almost no PATH) finds bun and sops.
+# bun is a user install since 2026-10-24 (no longer in the nix profile).
+PATH="$HOME/.bun/bin:/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:/usr/bin:/bin"
+export PATH
+S=/Users/me/familiar/who/elder/secrets/pokebattle.yaml
+P=/Users/me/elder-cm/workspace/pokebattle/pokebattle.ts
+if [ -f "$S" ]; then
+  exec sops exec-env "$S" "bun $P $*"
+fi
+exec bun "$P" "$@"
