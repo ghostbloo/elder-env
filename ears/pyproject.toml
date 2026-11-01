@@ -1,0 +1,23 @@
+[project]
+name = "ears"
+version = "0.1.0"
+requires-python = "==3.12.*"
+dependencies = [
+  "numpy",
+  "scipy",
+  "librosa",
+  "soundfile",
+  "matplotlib",
+  "pedalboard",
+  "pretty-midi",
+  "mido",
+  "demucs>=4.1.0",
+  "onnxruntime>=1.31.1",
+  "resampy>=0.4.3",
+  "mir-eval>=0.8.2",
+  "scikit-learn>=1.9.1",
+]
+
+[tool.uv]
+# only rain-mac (Apple silicon); a universal lock picks torch 2.2.2 (last x86 mac wheel), which breaks with numpy 2
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]

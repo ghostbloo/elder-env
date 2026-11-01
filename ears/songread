@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# songread wrapper: runs in the dev shell with this venv
+cd "$(dirname "$0")" && exec nix develop --command .venv/bin/python songread.py "$@"
