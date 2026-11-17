@@ -8,6 +8,9 @@
                                              sub continuity, rolls → rhythm.txt
     ./songread look   <name>                 one PNG: spectrogram + band onsets + loudness, for me to read
     ./songread all    <name> <url>           everything above
+    ./songread blind  <url>                  blind listening game: random codename, title sealed, metadata
+                                             stripped, then stems + rhythm + look. Prints only the codename.
+    ./songread reveal <name>                 print the sealed title (after guessing!)
 
 Run inside the dev shell (`nix develop`), from this directory.
 """
@@ -45,6 +48,30 @@ def fetch(name: str, url: str) -> None:
        "-b:a", "48k", str(out / "t.mp3"))
     print("fetched:", (out / "title.txt").read_text().strip())
 
+
+# --- blind -------------------------------------------------------------------
+# For "guess the song": nothing that names the track may reach stdout or the
+# cache folder name. The title goes to sealed.txt (only `reveal` reads it), and
+# the audio is re-encoded with all container metadata dropped.
+
+def blind(url: str) -> str:
+    import secrets
+    name = "blind-" + secrets.token_hex(3)
+    out = d(name)
+    subprocess.run(
+        ["yt-dlp", "-q", "--no-warnings", "--no-progress", "-f", "bestaudio", "-x",
+         "--audio-format", "wav", "-o", str(out / "raw.%(ext)s"),
+         "--print-to-file", "%(title)s|%(uploader)s|%(duration)s", str(out / "sealed.txt"), url],
+        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    sh("ffmpeg", "-v", "error", "-y", "-i", str(out / "raw.wav"), "-map_metadata", "-1",
+       "-fflags", "+bitexact", str(out / "t.wav"))
+    (out / "raw.wav").unlink()
+    sh("ffmpeg", "-v", "error", "-y", "-i", str(out / "t.wav"), "-map_metadata", "-1",
+       "-ac", "1", "-ar", "22050", "-b:a", "48k", str(out / "t.mp3"))
+    return name
+
+def reveal(name: str) -> None:
+    print((ROOT / name / "sealed.txt").read_text().strip())
 
 # --- stems -------------------------------------------------------------------
 
@@ -246,6 +273,15 @@ def main(argv: list[str]) -> None:
         print(__doc__)
         return
     cmd, name, *rest = argv
+    if cmd == "blind":
+        code = blind(name)  # here `name` is the url
+        print("blind:", code)
+        stems(code); rhythm(code); look(code)
+        print("blind:", code)
+        return
+    if cmd == "reveal":
+        reveal(name)
+        return
     if cmd == "fetch":
         fetch(name, rest[0])
     elif cmd == "stems":
